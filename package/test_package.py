@@ -23,9 +23,9 @@ def test_package_ver_simple():
     input_string = "CardManager-0:3-31.fc41.src"
     package_version = PackageVersion.from_string(input_string)
 
-    exp_maj = 3
+    exp_maj = '3'
     exp_minor = None
-    exp_rev = 31
+    exp_rev = '31'
     exp_ver_str = "0:3-31.fc41.src"
 
     assert exp_maj == package_version.major
@@ -37,10 +37,10 @@ def test_package_ver_xorg():
     input_string = "xorg-x11-server-0:21.1.13-5.fc41.src"
     package_version = PackageVersion.from_string(input_string)
 
-    exp_maj = 21
-    exp_minor = 1
-    exp_patch = 13
-    exp_rev = 5
+    exp_maj = '21'
+    exp_minor = '1'
+    exp_patch = '13'
+    exp_rev = '5'
     exp_ver_str = "0:21.1.13-5.fc41.src"
 
     assert exp_maj == package_version.major
@@ -109,15 +109,17 @@ def test_out():
     ]
 
     newer_build = [
-        PackageVersion.from_string("CardManager-0:3-31.fc41.src"), # Changed
+        PackageVersion.from_string("CardManager-0:3-30.fc41.src"), # NOT-Changed
         PackageVersion.from_string("xorg-x11-server-0:21.2.13-5.fc41.src"), # Changed
         PackageVersion.from_string("0ad-0:0.0.26-22.fc41.src") # Added
     ]
 
-    pkg_added = PackageComparator(new=newer_build[2]).out()
-    pkg_removed = PackageComparator(old=older_build[2]).out()
-    pkg_changed = PackageComparator(old=older_build[1], new=newer_build[1]).out()
+    pkg_added = PackageComparator(new=newer_build[2]).out()[0]
+    pkg_removed = PackageComparator(old=older_build[2]).out()[0]
+    pkg_changed = PackageComparator(old=older_build[1], new=newer_build[1]).out()[0]
+    pkg_n_changed = PackageComparator(old=older_build[0], new=newer_build[0]).out()[0]
 
     assert "0ad ADDED (0:0.0.26-22.fc41.src)" == pkg_added
     assert "0xFFFF REMOVED (0:0.10-8.fc41.src)" == pkg_removed
     assert "xorg-x11-server CHANGED (0:21.1.13-6.fc41.src -> 0:21.2.13-5.fc41.src)" == pkg_changed
+    assert "CardManager NOT_CHANGED (0:3-30.fc41.src)" == pkg_n_changed

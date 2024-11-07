@@ -1,5 +1,7 @@
 from enum import Enum
 
+from _pytest.python import Package
+
 class PackageVersion():
 
     def __init__(self, name, version_string, major, minor,patch, rev):
@@ -15,11 +17,11 @@ class PackageVersion():
 
         parts = version_string.rsplit("-", 2)
         version_part = parts[1]
-        rev = int(parts[2].split(".")[0])
+        rev = parts[2].split(".")[0]
         name = parts[0]
 
         prefix, version = version_part.split(":")
-        version_nums = list(map(int,version.split(".")))
+        version_nums = version.split(".")
         major = version_nums[0]
         minor = version_nums[1] if len(version_nums) > 1 else None
         patch = version_nums[2] if len(version_nums) > 2 else None
@@ -59,6 +61,7 @@ class PackageResult(Enum):
     ADDED = 0
     REMOVED = 1
     CHANGED = 2
+    NOT_CHANGED = 3
 
 
 class CouldNotCompareError(Exception):
@@ -80,21 +83,27 @@ class PackageComparator:
         if o_pkg != n_pkg:
             return PackageResult.CHANGED
 
+        if o_pkg == n_pkg:
+            return PackageResult.NOT_CHANGED
+
         raise CouldNotCompareError(o_pkg,n_pkg)
 
-    def out(self) -> str:
+    def out(self) -> tuple[str, PackageResult]:
 
         result = PackageComparator.compare(self.o_pkg,self.n_pkg)
 
         match result:
             case PackageResult.ADDED:
                 if self.n_pkg:
-                    return "{} {} ({})".format(self.n_pkg.name, result.name, self.n_pkg.version_string)
+                    return ("{} {} ({})".format(self.n_pkg.name, result.name, self.n_pkg.version_string), PackageResult.ADDED)
             case PackageResult.REMOVED:
                 if self.o_pkg:
-                    return "{} {} ({})".format(self.o_pkg.name, result.name, self.o_pkg.version_string)
+                    return ("{} {} ({})".format(self.o_pkg.name, result.name, self.o_pkg.version_string),PackageResult.REMOVED)
             case PackageResult.CHANGED:
                 if self.o_pkg and self.n_pkg:
-                    return "{} {} ({} -> {})".format(self.n_pkg.name, result.name, self.o_pkg.version_string, self.n_pkg.version_string)
+                    return ("{} {} ({} -> {})".format(self.n_pkg.name, result.name, self.o_pkg.version_string, self.n_pkg.version_string),PackageResult.CHANGED)
+            case PackageResult.NOT_CHANGED:
+                if self.o_pkg and self.n_pkg:
+                    return ("{} {} ({})".format(self.n_pkg.name, result.name, self.n_pkg.version_string),PackageResult.NOT_CHANGED)
 
         raise Exception("Could not process output.")
